@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Listings</title>
+    <link
+      href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script
+      src="https://code.jquery.com/jquery-3.3.1.min.js"
+      integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.6/purify.min.js"></script>
+    <script
+      src="https://kit.fontawesome.com/2a646d8a1f.js"
+      crossorigin="anonymous"
+    ></script>
+    <link rel="stylesheet" href="css/listings.css" />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+      <div class="container">
+        <a class="navbar-brand" href="listings.html">Snapsell</a>
+        <form class="form-inline my-2 my-lg-0">
+          <div class="input-group input-group-sm">
+            <input
+              type="text"
+              size="50"
+              class="form-control"
+              id="search"
+              placeholder="Search..."
+            />
+            <div class="input-group-append">
+              <button type="button" class="btn btn-secondary" id="searchbutton">
+                <i class="fa fa-search"></i>
+              </button>
+            </div>
+          </div>
+          <a href="sell.html" class="btn btn-danger btn-sm ml-3">Sell</a>
+          <a
+            href="viewprofile.html"
+            class="btn btn-primary btn-sm ml-3"
+            id="profile"
+            >Profile</a
+          >
+          <a href="offers.html" class="btn btn-info btn-sm ml-3"
+            ><i class="far fa-comments"></i> Offers</a
+          >
+          <button type="button" class="btn btn-info btn-sm ml-3" id="logout">
+            Logout
+          </button>
+        </form>
+      </div>
+    </nav>
+
+    <section class="jumbotron text-center">
+      <div class="container">
+        <h1 class="jumbotron-heading">Your listings</h1>
+      </div>
+    </section>
+
+    <div class="container">
+      <div class="row" id="listings"></div>
+    </div>
+
+    <script>
+      $(document).ready(function () {
+        var userData = localStorage.getItem("userData");
+        var userDataJson = userData ? JSON.parse(userData) : null;
+        if (userDataJson && userDataJson.length > 0) {
+          var username = DOMPurify.sanitize(userDataJson[0].username);
+          $("#profile").text(username);
+        }
+
+        var token = localStorage.getItem("token");
+        if (!token) {
+          window.location.href = "loginPage.html";
+          return;
+        }
+
+        $.ajax({
+          headers: { Authorization: "Bearer " + token },
+          url: "http://localhost:8081/user/listing/",
+          dataType: "json",
+          type: "GET",
+          contentType: "application/json",
+          success: function (data) {
+            if (data.success) {
+              var postsHtml = "";
+              data.result.forEach((listing) => {
+                postsHtml += `<div class="col-12 col-md-6 col-lg-4">
+                                <div class="card">
+                                    <img class="card-img-top" width="338" height="225" src="http://localhost:8081/${DOMPurify.sanitize(
+                                      listing.name
+                                    )}" alt="Listing Image">
+                                    <div class="card-body">
+                                        <h4 class="card-title">${DOMPurify.sanitize(
+                                          listing.title
+                                        )}</h4>
+                                        <p class="card-text">${DOMPurify.sanitize(
+                                          listing.category
+                                        )}</p>
+                                        <div class="row">
+                                            <div class="col">
+                                                <p class="btn btn-danger btn-block" id="listing-price-${
+                                                  listing.id
+                                                }">$${DOMPurify.sanitize(
+                  listing.price
+                )}</p>
+                                            </div>
+                                            <div class="col">
+                                                <a href="viewlisting.html?listingid=${
+                                                  listing.id
+                                                }" class="btn btn-success btn-block">View</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>`;
+              });
+              $("#listings").html(postsHtml);
+            } else {
+              alert("Error retrieving listings");
+            }
+          },
+          error: function () {
+            alert("Error retrieving listings");
+          },
+        });
+
+        $("#logout").click(function () {
+          $.ajax({
+            url: "http://localhost:8081/user/logout",
+            type: "POST",
+            contentType: "application/json",
+            dataType: "json",
+            success: function () {
+              localStorage.clear();
+              window.location.href = "loginPage.html";
+            },
+            error: function () {
+              alert("Logout failed");
+            },
+          });
+          return false;
+        });
+
+        $("#searchbutton").click(function () {
+          var searchQuery = $("#search").val().trim();
+          var sanitizedSearchQuery = DOMPurify.sanitize(searchQuery); // Sanitize input
+          if (sanitizedSearchQuery) {
+            window.location.href =
+              "searchlistings.html?search=" +
+              encodeURIComponent(sanitizedSearchQuery);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
